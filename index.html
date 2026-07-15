@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Repertório Cavaco</title>
+<style>
+  :root{
+    --bg:#f4efe6;
+    --panel:#fffaf2;
+    --ink:#2b2118;
+    --sub:#7a6a56;
+    --accent:#b5502e;
+    --accent2:#3f6b4f;
+    --chord:#3f6b4f;
+    --lyric:#2b2118;
+    --line:#e2d6c3;
+    --font-body:'Georgia',serif;
+    --font-ui:'Segoe UI',system-ui,sans-serif;
+  }
+  html.dark{
+    --bg:#15130f;
+    --panel:#1f1c16;
+    --ink:#ece4d6;
+    --sub:#a89a84;
+    --accent:#e08a5c;
+    --accent2:#7fc79a;
+    --chord:#7fc79a;
+    --lyric:#ece4d6;
+    --line:#332c22;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    display:flex;
+    height:100vh;
+    overflow:hidden;
+  }
+  /* SIDEBAR */
+  #sidebar{
+    width:270px;
+    min-width:270px;
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    overflow-y:auto;
+    padding:16px 0;
+  }
+  #sidebar h1{
+    font-family:var(--font-body);
+    font-size:1.05rem;
+    margin:0 16px 4px;
+    letter-spacing:.5px;
+  }
+  #sidebar .sub{
+    margin:0 16px 16px;
+    color:var(--sub);
+    font-size:.75rem;
+  }
+  .song-item{
+    padding:10px 16px;
+    cursor:pointer;
+    border-left:3px solid transparent;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+  }
+  .song-item:hover{background:rgba(181,80,46,.08)}
+  .song-item.active{
+    border-left-color:var(--accent);
+    background:rgba(181,80,46,.12);
+    font-weight:600;
+  }
+  .song-item .num{color:var(--sub);font-size:.7rem;min-width:20px}
+  .song-item .info{flex:1}
+  .song-item .title{font-size:.85rem}
+  .song-item .artist{font-size:.7rem;color:var(--sub)}
+  .badge{
+    font-size:.62rem;
+    padding:1px 6px;
+    border-radius:8px;
+    background:var(--accent2);
+    color:var(--panel);
+    white-space:nowrap;
+  }
+  .badge.todo{background:var(--sub)}
+  #addSongBtn{
+    margin:10px 16px 0;
+    padding:8px;
+    width:calc(100% - 32px);
+    background:transparent;
+    border:1px dashed var(--sub);
+    color:var(--sub);
+    border-radius:6px;
+    cursor:pointer;
+    font-size:.8rem;
+  }
+  #tabBar{
+    display:flex;
+    gap:4px;
+    padding:0 16px 12px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:8px;
+  }
+  .tab-btn{
+    flex:1;
+    padding:7px 4px;
+    font-size:.72rem;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--sub);
+    border-radius:6px;
+    cursor:pointer;
+    text-align:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .tab-btn.active{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+    font-weight:600;
+  }
+  .tab-btn.rename{
+    flex:0 0 auto;
+    width:24px;
+    padding:7px 0;
+  }
+
+  /* MAIN */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0}
+  #toolbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:10px 20px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  #toolbar .group{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--sub)}
+  button.ctrl{
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    padding:7px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:.8rem;
+    font-weight:600;
+  }
+  button.ctrl.secondary{background:var(--accent2)}
+  button.ctrl.ghost{background:transparent;border:1px solid var(--sub);color:var(--ink)}
+  #playBtn{min-width:80px}
+  #playBtn.playing{background:var(--accent2)}
+  input[type=range]{width:110px}
+  input[type=color]{
+    width:34px;height:26px;border:none;background:none;cursor:pointer;padding:0;
+  }
+  #titleBar{
+    padding:14px 26px 6px;
+  }
+  #titleBar h2{margin:0;font-family:var(--font-body);font-size:1.4rem}
+  #titleBar .meta{color:var(--sub);font-size:.8rem;margin-top:2px}
+
+  #scrollArea{
+    flex:1;
+    overflow-y:auto;
+    padding:10px 26px 200px;
+  }
+  .section{margin-bottom:26px}
+  .section h3{
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--sub);
+    border-bottom:1px solid var(--line);
+    padding-bottom:4px;
+    margin-bottom:10px;
+  }
+  .row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:4px;
+    flex-wrap:wrap;
+  }
+  .chords{
+    font-family:'Courier New',monospace;
+    font-weight:700;
+    color:var(--chord);
+    min-width:150px;
+    letter-spacing:1px;
+    font-size:.95rem;
+  }
+  .lyric-line{
+    flex:1;
+    min-width:220px;
+    border:none;
+    border-bottom:1px dashed var(--line);
+    background:transparent;
+    font-family:var(--font-body);
+    font-size:1.05rem;
+    color:var(--lyric);
+    padding:2px 4px;
+    outline:none;
+  }
+  .lyric-line:empty:before{
+    content:attr(data-placeholder);
+    color:var(--sub);
+    opacity:.6;
+  }
+  .chords[contenteditable]:empty:before{
+    content:attr(data-placeholder);
+    color:var(--sub);
+    opacity:.5;
+  }
+  .row-del{
+    border:none;
+    background:transparent;
+    color:var(--sub);
+    cursor:pointer;
+    font-size:1rem;
+    line-height:1;
+    padding:2px 4px;
+    opacity:.5;
+  }
+  .row-del:hover{ opacity:1; color:var(--accent); }
+  .add-row-btn{
+    margin-top:4px;
+    padding:5px 10px;
+    background:transparent;
+    border:1px dashed var(--line);
+    color:var(--sub);
+    border-radius:6px;
+    cursor:pointer;
+    font-size:.72rem;
+  }
+  .add-row-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .chord-ref{
+    font-family:'Courier New',monospace;
+    font-weight:700;
+    color:var(--chord);
+    font-size:1rem;
+    letter-spacing:.5px;
+    background:rgba(63,107,79,.08);
+    border-radius:6px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    line-height:1.6;
+  }
+  textarea.section-lyrics{
+    width:100%;
+    min-height:110px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    border-radius:6px;
+    padding:10px 12px;
+    font-family:var(--font-body);
+    font-size:1.05rem;
+    color:var(--lyric);
+    resize:vertical;
+    outline:none;
+  }
+  textarea.section-lyrics:focus{ border-color:var(--accent); }
+  .ref-details{ margin-bottom:14px; }
+  .ref-details summary{
+    cursor:pointer;
+    font-size:.78rem;
+    color:var(--sub);
+  }
+  .rendered-cifra{
+    font-family:'Courier New',monospace;
+    font-size:1.05rem;
+    line-height:1.5;
+    white-space:pre-wrap;
+  }
+  .v-chords{
+    color:var(--chord);
+    font-weight:700;
+    letter-spacing:.5px;
+  }
+  .v-lyric{
+    color:var(--lyric);
+    font-family:var(--font-body);
+    font-size:1.1rem;
+  }
+  .v-space{ height:.7em; }
+  textarea.fulltext{ min-height:340px; }
+
+  /* ===== MODO CELULAR ===== */
+  #menuBtn{ display:none; }
+  body.mobile #menuBtn{ display:inline-block; font-size:1.1rem; }
+  body.mobile{ display:block; }
+  body.mobile #sidebar{
+    position:fixed;
+    top:0; left:0; bottom:0;
+    width:82%;
+    max-width:330px;
+    z-index:50;
+    transform:translateX(-105%);
+    transition:transform .25s ease;
+    box-shadow:4px 0 20px rgba(0,0,0,.25);
+  }
+  body.mobile #sidebar.open{ transform:translateX(0); }
+  body.mobile #main{
+    height:100vh;
+    height:100dvh;
+  }
+  body.mobile #toolbar{
+    gap:8px;
+    padding:8px 10px;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  body.mobile #toolbar .group{ font-size:.7rem; }
+  body.mobile input[type=range]{ width:80px; }
+  body.mobile button.ctrl{
+    padding:10px 12px;
+    font-size:.85rem;
+  }
+  body.mobile #titleBar{ padding:10px 14px 4px; }
+  body.mobile #titleBar h2{ font-size:1.15rem; }
+  body.mobile #scrollArea{ padding:8px 14px 60vh; }
+  body.mobile .rendered-cifra{ font-size:.95rem; }
+  body.mobile .v-lyric{ font-size:1.02rem; }
+  body.mobile #sidebarOverlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    z-index:40;
+  }
+  body.mobile #sidebarOverlay.show{ display:block; }
+  textarea.raw{
+    width:100%;
+    min-height:90px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:6px;
+    color:var(--ink);
+    font-family:'Courier New',monospace;
+    font-size:.9rem;
+    padding:10px;
+    resize:vertical;
+  }
+  textarea.raw.lyrics{
+    font-family:var(--font-body);
+    font-size:1.05rem;
+    min-height:260px;
+    color:var(--lyric);
+  }
+  .note{
+    font-size:.78rem;
+    color:var(--sub);
+    background:rgba(181,80,46,.08);
+    border-left:3px solid var(--accent);
+    padding:8px 12px;
+    border-radius:0 6px 6px 0;
+    margin-bottom:14px;
+  }
+  ::-webkit-scrollbar{width:9px}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+</style>
+</head>
+<body>
+
+<div id="sidebarOverlay"></div>
+<div id="sidebar">
+  <h1>Repertório · Cavaco</h1>
+  <p class="sub">Sequência em tom de G — toque "transpor" pra ajustar</p>
+  <div id="tabBar"></div>
+  <div id="songList"></div>
+  <button id="addSongBtn">+ adicionar música</button>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button id="menuBtn" class="ctrl ghost" title="Abrir/fechar lista de músicas">☰</button>
+    <button id="playBtn" class="ctrl">▶ Play</button>
+    <button id="nextBtn" class="ctrl secondary" title="Pular para a próxima música">⏭</button>
+    <div class="group">Velocidade
+      <input type="range" id="speed" min="1" max="10" value="4">
+    </div>
+    <button id="darkBtn" class="ctrl ghost">🌙</button>
+    <div class="group">Cor
+      <input type="color" id="lyricColor" value="#2b2118">
+    </div>
+    <button id="transposeDown" class="ctrl ghost">−1 tom</button>
+    <span id="keyLabel" class="group" style="font-weight:700"></span>
+    <button id="transposeUp" class="ctrl ghost">+1 tom</button>
+    <button id="deviceBtn" class="ctrl ghost" title="Alternar visual: automático / celular / computador">📱 Auto</button>
+    <button id="exportBtn" class="ctrl ghost" title="Salvar tudo (letras coladas incluídas) num arquivo">💾</button>
+    <button id="importBtn" class="ctrl ghost" title="Carregar um arquivo salvo antes">📂</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
+
+  <div id="titleBar">
+    <h2 id="songTitle"></h2>
+    <div class="meta" id="songMeta"></div>
+  </div>
+
+  <div id="scrollArea"></div>
+</div>
+
+<script>
+/* ---------- DADOS ---------- */
+// Progressão de acordes real e verificada para "Farol das Estrelas" (cavaco, tom G).
+// A letra fica sempre vazia — cole a letra você mesmo a partir de uma fonte legítima.
+const repertoires = [
+  { name:"Repertório 1", songs: [
+  {
+    title:"Farol das Estrelas", artist:"Belo (versão Soweto)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["Am","D7"]}]},
+      {label:"Parte 1", rows:[
+        {c:["G","D"]}, {c:["Em7"]}, {c:["Bm","B7"]},
+        {c:["C"]}, {c:["G","E7"]}, {c:["A7"]}, {c:["D7","C","B"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["G","Am","Bm","C"]}, {c:["Bm","E7"]},
+        {c:["Am","G7"]}, {c:["C"]}, {c:["Em","Cm"]},
+        {c:["Bm","E7"]}, {c:["Em","D7","G","Em","D7"]}
+      ]},
+      {label:"Parte 2", rows:[
+        {c:["G","D"]}, {c:["Em7","Bm"]}, {c:["C","G"]}, {c:["Am","D7"]},
+        {c:["G","D"]}, {c:["Em7","Bm"]}, {c:["C","G"]}, {c:["Am"]}
+      ]}
+    ]
+  },
+  {
+    title:"Reinventar", artist:"Belo (original em A, ajustado p/ G)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["D","G"]}, {c:["D","G"]}]},
+      {label:"Parte 1", rows:[
+        {c:["Em","F#m"]}, {c:["Bm","A","G"]},
+        {c:["Em","F#m"]}, {c:["Bm","A","G"]}
+      ]},
+      {label:"Ponte", rows:[
+        {c:["Em"]}, {c:["F#m"]}, {c:["Bm","D"]}, {c:["G"]}, {c:["D","G"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["G","A","F#m"]}, {c:["Am"]}, {c:["D","G"]},
+        {c:["A","F#m"]}, {c:["Am"]}, {c:["D","G"]}
+      ]}
+    ]
+  },
+  {
+    title:"Pura Adrenalina", artist:"Belo (original em A, ajustado p/ G)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["G","F#7"]}, {c:["Bm","C"]}, {c:["G","F#7"]}, {c:["Bm","C"]}]},
+      {label:"Parte 1", rows:[
+        {c:["Bm","F#m"]}, {c:["G","Em"]}, {c:["D","Bm"]}, {c:["F#7"]},
+        {c:["Bm","F#m"]}, {c:["G","Em"]}, {c:["D","Bm"]}, {c:["F#7"]}
+      ]},
+      {label:"Pré-refrão", rows:[
+        {c:["G","F#7"]}, {c:["Bm","C"]}, {c:["G","F#7"]}, {c:["Bm","C"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["G","F#m"]}, {c:["Bm","C"]}, {c:["G","F#m"]}, {c:["Bm","C"]}, {c:["G","Em"]}
+      ]}
+    ]
+  },
+  {
+    title:"Cheia de Manias", artist:"Raça Negra (tom Gm — combina como paralela de G)", key:"Gm", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["Gm","F"]}, {c:["Gm","F"]}]},
+      {label:"Parte 1", rows:[
+        {c:["Gm"]}, {c:["F"]}, {c:["Gm"]}, {c:["F"]},
+        {c:["Gm"]}, {c:["F"]}, {c:["Gm"]}, {c:["F"]}
+      ]},
+      {label:"Solo/Ponte", rows:[
+        {c:["Gm","F"]}, {c:["Eb","F"]}, {c:["Gm","F"]}, {c:["Eb","F"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["Gm"]}, {c:["F"]}, {c:["Gm"]}, {c:["F"]}
+      ]}
+    ]
+  },
+  {
+    title:"É Tarde Demais", artist:"Raça Negra (original em E, ajustado p/ G)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["G","Am"]}, {c:["G","Am"]}]},
+      {label:"Parte 1", rows:[
+        {c:["G"]}, {c:["Am"]}, {c:["G"]}, {c:["Am"]},
+        {c:["G"]}, {c:["Am"]}, {c:["G"]}
+      ]},
+      {label:"Pré-refrão", rows:[
+        {c:["Em","Bm","C"]}, {c:["Bm"]}, {c:["Em","Bm","C"]}, {c:["D7"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["G","Bm"]}, {c:["C"]}, {c:["D7"]},
+        {c:["G","Bm"]}, {c:["C","D7"]}, {c:["G","Am"]}
+      ]}
+    ]
+  },
+  {
+    title:"Cigana", artist:"Raça Negra (original em C, ajustado p/ G)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["G","Bm"]}, {c:["Em","G"]}, {c:["C","Am"]}, {c:["D7","G"]}]},
+      {label:"Parte 1", rows:[
+        {c:["G","Bm"]}, {c:["Em"]}, {c:["C","D7"]}, {c:["G"]},
+        {c:["C","D7"]}, {c:["Bm"]}, {c:["Em"]}, {c:["Am","D7"]},
+        {c:["Bm"]}, {c:["Em"]}, {c:["Am","D7"]}, {c:["G","D7"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["G"]}, {c:["Bm"]}, {c:["C","D7"]}, {c:["G"]},
+        {c:["D7"]}, {c:["G"]}, {c:["Bm"]}, {c:["C","D7"]}, {c:["G"]}
+      ]}
+    ]
+  },
+  {
+    title:"Lua Vai (Recado à Minha Amada)", artist:"Katinguelê (original em F, ajustado p/ G, versão simplificada)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["Am","D7"]}, {c:["Bm","E7"]}, {c:["Am","D7"]}]},
+      {label:"Parte 1", rows:[
+        {c:["Am","D7","G"]}, {c:["E7","Am"]}, {c:["D7","G","Bm","E7"]},
+        {c:["Am","D7","G"]}, {c:["E7","Am"]}, {c:["D7","G","Bm","E7"]}
+      ]},
+      {label:"Ponte", rows:[
+        {c:["Bm","Am"]}, {c:["Em"]}, {c:["Am"]},
+        {c:["D7","Bm"]}, {c:["D7","E7"]}, {c:["Am","Bm"]}, {c:["Em"]},
+        {c:["E7","Am"]}, {c:["D7","G"]}, {c:["D7","E7"]}
+      ]}
+    ]
+  },
+  {
+    title:"Espere Por Mim, Morena", artist:"Exaltasamba (já em tom G, versão simplificada)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["G7","Am"]}, {c:["Bm","C"]}]},
+      {label:"Refrão", rows:[
+        {c:["C","Bm"]}, {c:["Am","G"]}, {c:["F","C"]}, {c:["Dm","C"]}
+      ]},
+      {label:"Parte 1", rows:[
+        {c:["C","Bm"]}, {c:["Am","G"]}, {c:["Dm","C"]}, {c:["Bm","Am"]},
+        {c:["F","Em"]}, {c:["Dm","G"]}, {c:["Dm","F","C"]}, {c:["Dm","C"]}
+      ]},
+      {label:"Ponte final", rows:[
+        {c:["C","G"]}, {c:["Dm","G"]}, {c:["C","G"]}, {c:["Dm","G"]}
+      ]}
+    ]
+  },
+  {
+    title:"Essa Tal Liberdade", artist:"Só Pra Contrariar (original em D, ajustado p/ G)", key:"G", ready:true,
+    sections:[
+      {label:"Introdução", rows:[{c:["G","Bm"]}, {c:["C","D7"]}, {c:["G","Bm"]}, {c:["C","D7"]}]},
+      {label:"Parte 1", rows:[
+        {c:["G","Bm"]}, {c:["C"]}, {c:["D7","G"]},
+        {c:["Bm","C"]}, {c:["D7","G"]},
+        {c:["Bm","C"]}, {c:["D7","Em"]},
+        {c:["Bm","C"]}, {c:["D7","G"]}
+      ]},
+      {label:"Refrão", rows:[
+        {c:["Bm","C"]}, {c:["D7","Em"]},
+        {c:["Bm","C"]}, {c:["D7","G"]}
+      ]}
+    ]
+  },
+  {title:"No Compasso do Criador", artist:"Katinguelê — complexa demais pra simplificar com segurança; use a versão 'Simplificada' do Cifra Club", key:"?", ready:false},
+  ]},
+  { name:"Repertório 2", songs: [] },
+  { name:"Repertório 3", songs: [] }
+];
+
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+function transposeChord(chord, steps){
+  const m = chord.match(/^([A-G])(#|b)?(.*)$/);
+  if(!m) return chord;
+  let [,root,acc,rest] = m;
+  let idx = NOTES.indexOf(root+(acc==="#"?"#":""));
+  if(idx===-1 && acc==="b"){ idx = NOTES.indexOf(root); idx = (idx-1+12)%12; }
+  if(idx===-1) idx = NOTES.indexOf(root);
+  idx = (idx+steps+120)%12;
+  return NOTES[idx]+rest;
+}
+
+let currentRepertoire = 0;
+let current = 0;
+let semitoneShift = 0;
+let playing = false;
+let scrollTimer = null;
+
+const tabBarEl = document.getElementById("tabBar");
+const songListEl = document.getElementById("songList");
+const scrollArea = document.getElementById("scrollArea");
+const songTitleEl = document.getElementById("songTitle");
+const songMetaEl = document.getElementById("songMeta");
+const keyLabelEl = document.getElementById("keyLabel");
+
+function activeSongs(){
+  return repertoires[currentRepertoire].songs;
+}
+
+function renderTabs(){
+  tabBarEl.innerHTML = "";
+  repertoires.forEach((r,i)=>{
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (i===currentRepertoire ? " active" : "");
+    btn.textContent = r.name;
+    btn.onclick = ()=>{
+      currentRepertoire = i;
+      current = 0;
+      semitoneShift = 0;
+      renderTabs(); renderSidebar(); renderSong();
+    };
+    tabBarEl.appendChild(btn);
+    if(i===currentRepertoire){
+      const renameBtn = document.createElement("button");
+      renameBtn.className = "tab-btn rename";
+      renameBtn.title = "Renomear aba";
+      renameBtn.textContent = "✎";
+      renameBtn.onclick = (e)=>{
+        e.stopPropagation();
+        const novoNome = prompt("Nome da aba:", r.name);
+        if(novoNome){ r.name = novoNome; renderTabs(); }
+      };
+      tabBarEl.appendChild(renameBtn);
+    }
+  });
+}
+
+function renderSidebar(){
+  songListEl.innerHTML = "";
+  const songs = activeSongs();
+  if(songs.length === 0){
+    songListEl.innerHTML = `<div class="note" style="margin:0 16px">Essa aba ainda não tem músicas. Use "+ adicionar música" abaixo pra começar o repertório dela.</div>`;
+    songTitleEl.textContent = "";
+    songMetaEl.textContent = "";
+    keyLabelEl.textContent = "—";
+    scrollArea.innerHTML = "";
+    return;
+  }
+  songs.forEach((s,i)=>{
+    const el = document.createElement("div");
+    el.className = "song-item" + (i===current?" active":"");
+    el.innerHTML = `<span class="num">${i+1}</span><span class="info"><div class="title">${s.title}</div><div class="artist">${s.artist}</div></span><span class="badge ${s.ready?'':'todo'}">${s.ready? (s.key||'G') : 'colar'}</span>`;
+    el.onclick = ()=>{ current=i; semitoneShift=0; renderSidebar(); renderSong(); closeSidebarMobile(); };
+    songListEl.appendChild(el);
+  });
+}
+
+function renderSong(){
+  const songs = activeSongs();
+  if(songs.length === 0) return;
+  const s = songs[current];
+  songTitleEl.textContent = s.title;
+  songMetaEl.textContent = s.artist + (s.ready ? " · tom original: " + s.key : " · acordes e letra ainda não preenchidos");
+  keyLabelEl.textContent = s.ready ? transposeChord(s.key, semitoneShift) : "—";
+  scrollArea.innerHTML = "";
+
+  if(s.fullText === undefined) s.fullText = "";
+
+  // Bloco de referência: acordes verificados da música (quando existirem)
+  let refHtml = "";
+  if(s.ready){
+    const refLines = s.sections.map(sec=>{
+      const chords = sec.rows.map(row=>row.c.map(c=>transposeChord(c, semitoneShift)).join(" ")).filter(Boolean).join("  /  ");
+      return `<div><b>${sec.label}:</b> ${chords}</div>`;
+    }).join("");
+    refHtml = `<details class="ref-details"><summary>Ver acordes verificados desta música (guia)</summary><div class="chord-ref">${refLines}</div></details>`;
+  }
+
+  if(s.fullText.trim() === ""){
+    // Modo edição: colar a cifra completa
+    scrollArea.innerHTML = `
+      ${refHtml}
+      <div class="note">Cole abaixo a cifra completa da música (acordes + letra, do jeito que aparece no Cifra Club). O app detecta sozinho as linhas de acorde e destaca. Depois de colar, toque em "Salvar e visualizar".</div>
+      <textarea class="raw fulltext" placeholder="Cole aqui a cifra completa (acordes em cima, letra embaixo)..."></textarea>
+      <button class="ctrl" id="saveFullBtn" style="margin-top:10px">Salvar e visualizar</button>
+    `;
+    document.getElementById("saveFullBtn").onclick = ()=>{
+      s.fullText = scrollArea.querySelector(".fulltext").value;
+      renderSong();
+    };
+  } else {
+    // Modo visualização: renderiza com destaque automático de acordes
+    const CHORD_RE = /^[\s]*((?:[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus)?[0-9]*(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?)[\s]*)+$/;
+    const lines = s.fullText.split("\n");
+    const rendered = lines.map(line=>{
+      if(line.trim()==="") return `<div class="v-space">&nbsp;</div>`;
+      const isChordLine = CHORD_RE.test(line) && /[A-G]/.test(line);
+      if(isChordLine){
+        const shifted = semitoneShift === 0 ? line : line.replace(/[A-G](#|b)?/g, m=>transposeChord(m, semitoneShift));
+        return `<div class="v-chords">${shifted.replace(/</g,"&lt;")}</div>`;
+      }
+      return `<div class="v-lyric">${line.replace(/</g,"&lt;")}</div>`;
+    }).join("");
+    scrollArea.innerHTML = `
+      ${refHtml}
+      <button class="ctrl ghost" id="editFullBtn" style="margin-bottom:12px">✎ Editar cifra colada</button>
+      <div class="rendered-cifra">${rendered}</div>
+    `;
+    document.getElementById("editFullBtn").onclick = ()=>{
+      const backup = s.fullText;
+      s.fullText = "";
+      renderSong();
+      scrollArea.querySelector(".fulltext").value = backup;
+    };
+  }
+}
+
+document.getElementById("addSongBtn").onclick = ()=>{
+  const title = prompt("Nome da música:");
+  if(!title) return;
+  const artist = prompt("Artista/intérprete:") || "";
+  const songs = activeSongs();
+  songs.push({title, artist, key:"?", ready:false});
+  current = songs.length-1;
+  renderSidebar(); renderSong();
+};
+
+document.getElementById("transposeUp").onclick = ()=>{ semitoneShift++; renderSong(); };
+document.getElementById("transposeDown").onclick = ()=>{ semitoneShift--; renderSong(); };
+
+document.getElementById("darkBtn").onclick = ()=>{
+  document.documentElement.classList.toggle("dark");
+};
+
+document.getElementById("lyricColor").oninput = (e)=>{
+  document.documentElement.style.setProperty("--lyric", e.target.value);
+};
+
+function goToNextSong(){
+  const songs = activeSongs();
+  if(songs.length === 0) return;
+  if(current < songs.length-1){
+    current++;
+  } else {
+    current = 0; // volta pro início do repertório
+  }
+  semitoneShift = 0;
+  renderSidebar();
+  renderSong();
+  scrollArea.scrollTop = 0;
+  // se estava tocando, continua tocando na próxima música
+}
+
+const playBtn = document.getElementById("playBtn");
+const speedInput = document.getElementById("speed");
+document.getElementById("nextBtn").onclick = ()=>{ goToNextSong(); };
+
+document.getElementById("exportBtn").onclick = ()=>{
+  const blob = new Blob([JSON.stringify(repertoires, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "meu-repertorio-cavaco.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+document.getElementById("importBtn").onclick = ()=>{
+  document.getElementById("importFile").click();
+};
+document.getElementById("importFile").onchange = (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error("formato inválido");
+      repertoires.length = 0;
+      data.forEach(r=>repertoires.push(r));
+      currentRepertoire = 0; current = 0; semitoneShift = 0;
+      renderTabs(); renderSidebar(); renderSong();
+      alert("Repertório carregado!");
+    }catch(err){
+      alert("Não consegui ler esse arquivo. Use um arquivo salvo pelo botão 💾 Salvar dados.");
+    }
+  };
+  reader.readAsText(file);
+};
+
+/* ===== MODO DE VISUAL (auto / celular / computador) ===== */
+const deviceBtn = document.getElementById("deviceBtn");
+const deviceModes = ["auto","mobile","desktop"];
+const deviceLabels = {auto:"📱 Auto", mobile:"📱 Celular", desktop:"💻 Computador"};
+let deviceMode = "auto";
+function applyDeviceMode(){
+  const isMobile = deviceMode === "mobile" || (deviceMode === "auto" && window.innerWidth < 768);
+  document.body.classList.toggle("mobile", isMobile);
+  deviceBtn.textContent = deviceLabels[deviceMode];
+  if(!isMobile){
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebarOverlay").classList.remove("show");
+  }
+}
+deviceBtn.onclick = ()=>{
+  deviceMode = deviceModes[(deviceModes.indexOf(deviceMode)+1) % deviceModes.length];
+  applyDeviceMode();
+};
+window.addEventListener("resize", applyDeviceMode);
+
+/* ===== MENU LATERAL (celular) ===== */
+const sidebarEl = document.getElementById("sidebar");
+const overlayEl = document.getElementById("sidebarOverlay");
+document.getElementById("menuBtn").onclick = ()=>{
+  sidebarEl.classList.toggle("open");
+  overlayEl.classList.toggle("show", sidebarEl.classList.contains("open"));
+};
+overlayEl.onclick = ()=>{
+  sidebarEl.classList.remove("open");
+  overlayEl.classList.remove("show");
+};
+function closeSidebarMobile(){
+  if(document.body.classList.contains("mobile")){
+    sidebarEl.classList.remove("open");
+    overlayEl.classList.remove("show");
+  }
+}
+
+/* ===== ROLAGEM AUTOMÁTICA (requestAnimationFrame) ===== */
+let rafId = null;
+let lastFrameTime = null;
+let scrollAccum = 0;
+
+function scrollStep(now){
+  if(!playing) return;
+  if(lastFrameTime === null) lastFrameTime = now;
+  const dt = (now - lastFrameTime) / 1000;
+  lastFrameTime = now;
+  // velocidade 1 = ~4 px/s, velocidade 10 = ~40 px/s
+  scrollAccum += Number(speedInput.value) * 4 * dt;
+  if(scrollAccum >= 1){
+    const px = Math.floor(scrollAccum);
+    scrollArea.scrollTop += px;
+    scrollAccum -= px;
+  }
+  const hasScroll = scrollArea.scrollHeight > scrollArea.clientHeight + 10;
+  const reachedEnd = hasScroll && (scrollArea.scrollTop + scrollArea.clientHeight >= scrollArea.scrollHeight - 4);
+  if(reachedEnd){
+    goToNextSong();
+    scrollArea.scrollTop = 0;
+  }
+  rafId = requestAnimationFrame(scrollStep);
+}
+
+playBtn.onclick = ()=>{
+  playing = !playing;
+  if(playing){
+    playBtn.textContent = "⏸ Pausar";
+    playBtn.classList.add("playing");
+    lastFrameTime = null;
+    scrollAccum = 0;
+    rafId = requestAnimationFrame(scrollStep);
+  } else {
+    playBtn.textContent = "▶ Play";
+    playBtn.classList.remove("playing");
+    if(rafId) cancelAnimationFrame(rafId);
+  }
+};
+
+applyDeviceMode();
+renderTabs();
+renderSidebar();
+renderSong();
+</script>
+</body>
+</html>
