@@ -617,7 +617,7 @@ function renderTabs(){
       renameBtn.onclick = (e)=>{
         e.stopPropagation();
         const novoNome = prompt("Nome da aba:", r.name);
-        if(novoNome){ r.name = novoNome; renderTabs(); }
+        if(novoNome){ r.name = novoNome; renderTabs(); saveData(); }
       };
       tabBarEl.appendChild(renameBtn);
     }
@@ -675,6 +675,7 @@ function renderSong(){
     `;
     document.getElementById("saveFullBtn").onclick = ()=>{
       s.fullText = scrollArea.querySelector(".fulltext").value;
+      saveData();
       renderSong();
     };
   } else {
@@ -710,6 +711,7 @@ document.getElementById("addSongBtn").onclick = ()=>{
   const artist = prompt("Artista/intérprete:") || "";
   const songs = activeSongs();
   songs.push({title, artist, key:"?", ready:false});
+  saveData();
   current = songs.length-1;
   renderSidebar(); renderSong();
 };
@@ -767,6 +769,7 @@ document.getElementById("importFile").onchange = (e)=>{
       repertoires.length = 0;
       data.forEach(r=>repertoires.push(r));
       currentRepertoire = 0; current = 0; semitoneShift = 0;
+      saveData();
       renderTabs(); renderSidebar(); renderSong();
       alert("Repertório carregado!");
     }catch(err){
@@ -775,6 +778,25 @@ document.getElementById("importFile").onchange = (e)=>{
   };
   reader.readAsText(file);
 };
+
+/* ===== SALVAMENTO AUTOMÁTICO (localStorage) ===== */
+const STORAGE_KEY = "repertorio-cavaco-v1";
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(repertoires));
+  }catch(e){ /* armazenamento cheio ou indisponível */ }
+}
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data) || data.length === 0) return;
+    repertoires.length = 0;
+    data.forEach(r=>repertoires.push(r));
+  }catch(e){ /* dados corrompidos: ignora e usa o padrão */ }
+}
+loadData();
 
 /* ===== MODO DE VISUAL (auto / celular / computador) ===== */
 const deviceBtn = document.getElementById("deviceBtn");
